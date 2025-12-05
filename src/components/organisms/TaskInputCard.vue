@@ -33,7 +33,7 @@ const onExecute = () => {
       </div>
       <BaseTextarea
         :model-value="modelValue"
-        rows="7"
+        :rows="7"
         placeholder="Enter your task here... e.g., 'Write a blog post about AI' or 'Create a React component for a login form'"
         @update:model-value="updateValue"
       />

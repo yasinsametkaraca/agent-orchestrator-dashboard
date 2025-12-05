@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mocked } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useTaskStore } from '@/store/useTaskStore';
 import type { ExecuteTaskResponse, TaskDetail, TaskStatus } from '@/types/domain';
+import { useTaskStore } from '@/store/useTaskStore';
+import { agentApi } from '@/api/agentApi';
+import { tasksApi } from '@/api/tasksApi';
 
 vi.mock('@/api/agentApi', () => ({
   agentApi: {
@@ -24,12 +26,13 @@ vi.mock('@/composables/useSseOrPolling', () => ({
   })
 }));
 
-const mockExecuteTask = vi.importedModule<typeof import('@/api/agentApi')>('agentApi');
-const mockTasksApi = vi.importedModule<typeof import('@/api/tasksApi')>('tasksApi');
+const mockedAgentApi = agentApi as Mocked<typeof agentApi>;
+const mockedTasksApi = tasksApi as Mocked<typeof tasksApi>;
 
 describe('useTaskStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    vi.clearAllMocks();
   });
 
   it('executeTask updates state and calls API', async () => {
@@ -60,19 +63,19 @@ describe('useTaskStore', () => {
       api_version: 'v1'
     };
 
-    (mockExecuteTask.agentApi.executeTask as any).mockResolvedValue(response);
-    (mockTasksApi.tasksApi.getTaskDetail as any).mockResolvedValue(detail);
+    mockedAgentApi.executeTask.mockResolvedValue(response);
+    mockedTasksApi.getTaskDetail.mockResolvedValue(detail);
 
     await store.executeTask('test task');
 
-    expect(mockExecuteTask.agentApi.executeTask).toHaveBeenCalledTimes(1);
-    expect(store.currentTaskId.value).toBe('task-123');
-    expect(store.currentTask.value?.task_id).toBe('task-123');
+    expect(mockedAgentApi.executeTask).toHaveBeenCalledTimes(1);
+    expect(store.currentTaskId).toBe('task-123');
+    expect(store.currentTask?.task_id).toBe('task-123');
   });
 
   it('loadHistory populates history', async () => {
     const store = useTaskStore();
-    (mockTasksApi.tasksApi.listTasks as any).mockResolvedValue([
+    mockedTasksApi.listTasks.mockResolvedValue([
       {
         task_id: 'task-1',
         agent_type: 'content',
@@ -85,7 +88,7 @@ describe('useTaskStore', () => {
     ]);
 
     await store.loadHistory();
-    expect(store.history.value.length).toBe(1);
-    expect(store.history.value[0].task_id).toBe('task-1');
+    expect(store.history.length).toBe(1);
+    expect(store.history[0].task_id).toBe('task-1');
   });
 });

@@ -82,7 +82,7 @@ defineProps<Props>();
                 <a
                   :href="c.url"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   class="text-pa-blue hover:underline"
                 >
                   {{ c.title || c.url }}
