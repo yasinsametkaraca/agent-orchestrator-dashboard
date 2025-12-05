@@ -34,7 +34,7 @@ const onExecute = () => {
       <BaseTextarea
         :model-value="modelValue"
         :rows="7"
-        placeholder="Enter your task here... e.g., 'Write a blog post about AI' or 'Create a React component for a login form'"
+        placeholder="Enter your task here..., 'Write a blog post about AI' or 'Create a React component for a login form'"
         @update:model-value="updateValue"
       />
       <div class="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
