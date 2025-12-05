@@ -5,6 +5,6 @@ services:
     build: .
     container_name: agent-orchestrator-dashboard
     ports:
-      - '${FRONTEND_HTTP_PORT:-5173}:80'
+      - '${FRONTEND_HTTP_PORT:-80}:80'
     # For production, bake your .env into the image before building
     restart: unless-stopped
