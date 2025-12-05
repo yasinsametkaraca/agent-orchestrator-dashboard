@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+  frontend:
+    build: .
+    container_name: agent-orchestrator-dashboard
+    ports:
+      - '5173:80'
+    # For production, bake your .env into the image before building
+    restart: unless-stopped
