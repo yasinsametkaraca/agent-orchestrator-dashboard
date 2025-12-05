@@ -5,8 +5,10 @@ on:
     branches: ['main']
 
 jobs:
-  build-test:
+  build-test-deploy:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: ci
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,3 +27,69 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Setup SSH key for EC2
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          echo "[ci] Preparing SSH configuration"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          echo "[ci] SSH key and known_hosts configured"
+
+      - name: Deploy to EC2
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+
+          echo "[deploy] Connecting to EC2 and starting deployment at $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          ssh "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" 'bash -s' << "EOF"
+          set -euo pipefail
+
+          echo "[deploy] Hostname: $(hostname)"
+          echo "[deploy] Current time (UTC): $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          REPO_DIR="/opt/agent-orchestrator-dashboard"
+
+          if [ ! -d "$REPO_DIR" ]; then
+            echo "[deploy][ERROR] Repository directory $REPO_DIR does not exist."
+            echo "[deploy] Ensure the repo is cloned to $REPO_DIR on the EC2 instance."
+            exit 1
+          fi
+
+          cd "$REPO_DIR"
+          echo "[deploy] Working directory: $(pwd)"
+
+          if [ ! -d ".git" ]; then
+            echo "[deploy][ERROR] .git directory not found in $(pwd)"
+            echo "[deploy] Make sure this path is a valid git repository."
+            exit 1
+          fi
+
+          echo "[deploy] Fetching latest commit from origin/main"
+          git fetch origin main
+          git reset --hard origin/main
+
+          echo "[deploy] Latest commit on this host:"
+          git --no-pager log -1 --pretty=format:"%h - %an (%ae) %s" || true
+          echo
+
+          if [ -f ".env" ]; then
+            echo "[deploy] .env file detected. Non-sensitive keys:"
+            grep -E "^(FRONTEND_|VITE_)" .env || echo "[deploy] No FRONTEND_ or VITE_ keys found."
+          else
+            echo "[deploy][WARN] .env file not found. Vite will fall back to defaults."
+          fi
+
+          echo "[deploy] Rebuilding Docker image and restarting containers via docker compose"
+          docker compose down || true
+          docker compose up -d --build
+
+          echo "[deploy] Active containers after deploy:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+          echo "[deploy] Deployment finished successfully at $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          EOF
