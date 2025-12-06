@@ -6,8 +6,8 @@ import BaseInput from '@/components/atoms/BaseInput.vue';
 import TaskHistoryTable from '@/components/organisms/TaskHistoryTable.vue';
 import EmptyStateCard from '@/components/organisms/EmptyStateCard.vue';
 import TaskDetailModal from '@/components/organisms/TaskDetailModal.vue';
-import ToggleSwitch from '@/components/atoms/ToggleSwitch.vue';
 import Icon from '@/components/atoms/Icon.vue';
+import PaginationBar from '@/components/molecules/PaginationBar.vue';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useUiStore } from '@/store/useUiStore';
 import LoaderSpinner from '@/components/atoms/LoaderSpinner.vue';
@@ -15,7 +15,13 @@ import type { TaskStatus } from '@/types/domain';
 
 const taskStore = useTaskStore();
 const uiStore = useUiStore();
-const { loading, history: taskHistory } = storeToRefs(taskStore);
+const {
+  loading,
+  history: taskHistory,
+  error,
+  currentPage,
+  paginationMeta
+} = storeToRefs(taskStore);
 
 const search = ref('');
 const selectedAgent = ref<'all' | 'content' | 'code'>('all');
@@ -55,6 +61,7 @@ onMounted(async () => {
 });
 
 watch([selectedAgent, selectedStatus], async () => {
+  taskStore.setCurrentPage(1);
   await applyFilters();
 });
 
@@ -64,6 +71,30 @@ watch(
     taskStore.setSearchFilter(val);
   }
 );
+
+const onPageChange = async (page: number) => {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.debug('[TaskHistoryPage] onPageChange', {
+      page,
+      currentPage: currentPage.value,
+      meta: paginationMeta.value
+    });
+  }
+
+  if (page === currentPage.value || page < 1) return;
+
+  taskStore.setCurrentPage(page);
+
+  try {
+    await applyFilters();
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('[TaskHistoryPage] loadHistory failed on page change', err);
+    }
+  }
+};
 
 const openDetails = (taskId: string) => {
   if (import.meta.env.DEV) {
@@ -129,13 +160,33 @@ const openDetails = (taskId: string) => {
       <LoaderSpinner />
     </div>
 
-    <TaskHistoryTable
-      v-if="hasTasks"
-      :tasks="tasks"
-      @view="openDetails"
-    />
+    <div
+      v-if="error"
+      class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+    >
+      {{ error }}
+    </div>
 
-    <EmptyStateCard v-else-if="!hasTasks" />
+    <div v-if="hasTasks">
+      <TaskHistoryTable
+        :tasks="tasks"
+        @view="openDetails"
+      />
+      <PaginationBar
+        v-if="paginationMeta"
+        class="mt-4"
+        :page="currentPage"
+        :page-size="paginationMeta.page_size"
+        :total-items="paginationMeta.total_items"
+        :total-pages="paginationMeta.total_pages"
+        :has-next="paginationMeta.has_next"
+        :has-previous="paginationMeta.has_previous"
+        :loading="loading"
+        @change="onPageChange"
+      />
+    </div>
+
+    <EmptyStateCard v-else />
 
     <TaskDetailModal v-if="uiStore.isTaskDetailModalOpen" />
   </div>

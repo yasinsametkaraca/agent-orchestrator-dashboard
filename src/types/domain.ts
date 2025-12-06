@@ -53,6 +53,20 @@ export interface TaskSummary {
   summary: string | null;
 }
 
+export interface TaskListMeta {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export interface TaskListResponse {
+  items: TaskSummary[];
+  meta: TaskListMeta;
+}
+
 export interface TaskDetail {
   task_id: string;
   session_id: string | null;

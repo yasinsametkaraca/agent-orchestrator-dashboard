@@ -4,7 +4,8 @@ import type {
   TaskDetail,
   TaskSummary,
   TaskStatus,
-  TaskStatusEvent
+  TaskStatusEvent,
+  TaskListMeta
 } from '@/types/domain';
 import type { ExecuteTaskRequest } from '@/types/domain';
 import { agentApi } from '@/api/agentApi';
@@ -27,9 +28,12 @@ interface TaskState {
   polling: boolean;
   error: string | null;
   filters: TaskFilters;
-  historyPage: number;
-  historyPageSize: number;
+  currentPage: number;
+  pageSize: number;
+  paginationMeta: TaskListMeta | null;
 }
+
+const DEFAULT_HISTORY_PAGE_SIZE = 20;
 
 export const useTaskStore = defineStore('tasks', () => {
   const state = ref<TaskState>({
@@ -44,8 +48,9 @@ export const useTaskStore = defineStore('tasks', () => {
       agent_type: null,
       search: ''
     },
-    historyPage: 1,
-    historyPageSize: 20
+    currentPage: 1,
+    pageSize: DEFAULT_HISTORY_PAGE_SIZE,
+    paginationMeta: null
   });
 
   let trackingController:
@@ -70,8 +75,9 @@ export const useTaskStore = defineStore('tasks', () => {
       loading: state.value.loading,
       polling: state.value.polling,
       filters: state.value.filters,
-      historyPage: state.value.historyPage,
-      historyPageSize: state.value.historyPageSize
+      currentPage: state.value.currentPage,
+      pageSize: state.value.pageSize,
+      paginationMeta: state.value.paginationMeta
     });
   };
 
@@ -174,13 +180,16 @@ export const useTaskStore = defineStore('tasks', () => {
     state.value.error = null;
     try {
       const { status, agent_type } = state.value.filters;
-      const results = await tasksApi.listTasks({
+      const response = await tasksApi.listTasks({
         status,
         agent_type: agent_type ?? undefined,
-        page: state.value.historyPage,
-        page_size: state.value.historyPageSize
+        page: state.value.currentPage,
+        page_size: state.value.pageSize
       });
-      state.value.history = results;
+      state.value.history = response.items;
+      state.value.paginationMeta = response.meta;
+      state.value.currentPage = response.meta.page;
+      state.value.pageSize = response.meta.page_size;
       debugState('loadHistory:success');
     } catch (err: any) {
       state.value.error = err?.message || 'Failed to load task history.';
@@ -188,8 +197,8 @@ export const useTaskStore = defineStore('tasks', () => {
         // eslint-disable-next-line no-console
         console.error('[tasks] loadHistory error', err, {
           filters: state.value.filters,
-          page: state.value.historyPage,
-          pageSize: state.value.historyPageSize
+          page: state.value.currentPage,
+          pageSize: state.value.pageSize
         });
       }
       debugState('loadHistory:error')
@@ -211,9 +220,14 @@ export const useTaskStore = defineStore('tasks', () => {
     state.value.filters.search = search;
   };
 
-  const setHistoryPage = (page: number) => {
+  const setCurrentPage = (page: number) => {
     if (page < 1) return;
-    state.value.historyPage = page;
+    state.value.currentPage = page;
+  };
+
+  const setHistoryPage = (page: number) => {
+    // Backwards-compat alias for existing callers
+    setCurrentPage(page);
   };
 
   const filteredHistory = computed(() => {
@@ -235,8 +249,12 @@ export const useTaskStore = defineStore('tasks', () => {
     polling: computed(() => state.value.polling),
     error: computed(() => state.value.error),
     filters: computed(() => state.value.filters),
-    historyPage: computed(() => state.value.historyPage),
-    historyPageSize: computed(() => state.value.historyPageSize),
+    currentPage: computed(() => state.value.currentPage),
+    pageSize: computed(() => state.value.pageSize),
+    paginationMeta: computed(() => state.value.paginationMeta),
+    // Backwards-compat aliases for existing callers
+    historyPage: computed(() => state.value.currentPage),
+    historyPageSize: computed(() => state.value.pageSize),
     currentTaskLogs,
     executeTask,
     fetchTaskDetail,
@@ -246,6 +264,7 @@ export const useTaskStore = defineStore('tasks', () => {
     setStatusFilter,
     setAgentTypeFilter,
     setSearchFilter,
+    setCurrentPage,
     setHistoryPage
   };
 });

@@ -1,5 +1,5 @@
 import { httpClient } from './httpClient';
-import type { TaskDetail, TaskStatus, TaskSummary } from '@/types/domain';
+import type { TaskDetail, TaskStatus, TaskListResponse } from '@/types/domain';
 
 export interface ListTasksParams {
   status?: TaskStatus;
@@ -9,8 +9,8 @@ export interface ListTasksParams {
 }
 
 export const tasksApi = {
-  async listTasks(params: ListTasksParams): Promise<TaskSummary[]> {
-    const response = await httpClient.get<TaskSummary[]>('/v1/tasks', { params });
+  async listTasks(params: ListTasksParams): Promise<TaskListResponse> {
+    const response = await httpClient.get<TaskListResponse>('/v1/tasks', { params });
     return response.data;
   },
 
