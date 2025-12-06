@@ -168,7 +168,7 @@ const donutOptions = {
 </script>
 
 <template>
-  <div class="mt-6 grid gap-4 md:grid-cols-2">
+  <div class="mt-6 grid gap-4 lg:grid-cols-2">
     <section class="card">
       <div class="card-inner">
         <div class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-50">
@@ -183,8 +183,8 @@ const donutOptions = {
         <div class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-50">
           Agent Distribution
         </div>
-        <div class="flex flex-col items-center gap-6 md:flex-row md:items-center">
-          <div class="h-40 w-40 mx-auto md:mx-0">
+        <div class="flex flex-col items-center gap-6 lg:flex-row lg:items-center">
+          <div class="mx-auto h-40 w-40 lg:mx-0">
             <Doughnut :data="donutData" :options="donutOptions" />
           </div>
           <div class="space-y-2 text-xs text-slate-600 dark:text-slate-300">

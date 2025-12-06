@@ -48,7 +48,7 @@ const computeTodayCounts = (metrics: SystemMetrics | null) => {
 </script>
 
 <template>
-  <div class="grid gap-4 md:grid-cols-4">
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <MetricCard
       title="Queued Tasks"
       :value="metrics ? String(metrics.pending_tasks) : '0'"
