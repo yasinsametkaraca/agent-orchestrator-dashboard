@@ -116,9 +116,10 @@ export interface SystemMetricsAllTimeSnapshot {
 }
 
 export interface TaskStatusEvent {
-  event: string;
+  event?: string;
   status: TaskStatus;
-  timestamp: string;
+  timestamp?: string;
+  task_id?: string;
   error_type?: string | null;
   error_message?: string | null;
 }

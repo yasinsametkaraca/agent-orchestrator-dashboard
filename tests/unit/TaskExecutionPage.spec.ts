@@ -43,7 +43,8 @@ vi.mock('@/composables/useSseOrPolling', () => ({
     start: vi.fn(),
     stop: vi.fn(),
     isUsingSse: { value: false }
-  })
+  }),
+  DEFAULT_TASK_STATUS_POLLING_INTERVAL_MS: 2500
 }));
 
 describe('TaskExecutionPage', () => {

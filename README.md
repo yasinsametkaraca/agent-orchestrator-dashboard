@@ -129,8 +129,8 @@ agent-orchestrator-dashboard/
 ### 3.3 Composables
 
 - **`useSseOrPolling`**
-  - Tries to establish EventSource to `/v1/tasks/{task_id}/events` if **no API key** is configured.
-  - If API key is configured (browser cannot send custom headers with native `EventSource`), logs this and falls back to polling.
+  - Always attempts to establish an `EventSource` connection to `/v1/tasks/{task_id}/events` (backend SSE endpoint).
+  - If the SSE connection fails (e.g., authentication or CORS issues), it logs detailed context and transparently falls back to HTTP polling.
   - Exposes `start`, `stop`, `isUsingSse`, `isActive`.
 
 - **`usePolling`**
@@ -149,12 +149,9 @@ agent-orchestrator-dashboard/
    - Stores `task_id`, fetches initial detail.
    - Calls `startTaskTracking(task_id)`.
 2. `useSseOrPolling`:
-   - If API keys **disabled**:
-     - Connects native `EventSource` to `/v1/tasks/{task_id}/events`.
-     - On each `status_changed` event, fetches detail and updates store.
-   - If API keys **enabled** (current backend config):
-     - Logs that SSE headers cannot be sent and directly starts polling:
-       - `GET /v1/tasks/{task_id}` every 2.5 seconds.
+  - Always first connects a native `EventSource` to `/v1/tasks/{task_id}/events`.
+  - On each status event (e.g., `queued`, `processing`, `completed`, `failed`), it fetches the latest detail and updates the store.
+  - If the SSE stream cannot be established or errors repeatedly (for example because the endpoint enforces API-key headers that browsers cannot send via `EventSource`), it closes the connection and switches to polling `GET /v1/tasks/{task_id}` every 2.5 seconds.
 3. Tracking stops when status is `completed` or `failed`.
 
 ---

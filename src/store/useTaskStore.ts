@@ -9,7 +9,7 @@ import type {
 import type { ExecuteTaskRequest } from '@/types/domain';
 import { agentApi } from '@/api/agentApi';
 import { tasksApi } from '@/api/tasksApi';
-import { useSseOrPolling } from '@/composables/useSseOrPolling';
+import { useSseOrPolling, DEFAULT_TASK_STATUS_POLLING_INTERVAL_MS } from '@/composables/useSseOrPolling';
 import { appConfig, isLocalEnv } from '@/config/env';
 import { buildTaskLogs } from '@/utils/taskHelpers';
 
@@ -148,12 +148,15 @@ export const useTaskStore = defineStore('tasks', () => {
           stopTaskTracking();
         }
       },
-      pollingIntervalMs: 2500
+      pollingIntervalMs: DEFAULT_TASK_STATUS_POLLING_INTERVAL_MS,
+      onModeChange(mode) {
+        state.value.polling = mode === 'polling';
+        debugState(`startTaskTracking:mode:${mode}`);
+      }
     });
 
     trackingController = controller;
     trackingController.start();
-    state.value.polling = !controller.isUsingSse.value;
     debugState('startTaskTracking:init');
   };
 
