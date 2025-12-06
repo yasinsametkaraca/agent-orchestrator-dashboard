@@ -19,11 +19,11 @@ defineProps<Props>();
         No log entries yet.
       </div>
       <div v-else class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
-        <div v-for="log in logs" :key="`${log.timestamp}-${log.message}`" class="flex gap-3 py-2">
+        <div v-for="log in logs" :key="`${log.timestamp}-${log.message}`" class="flex align gap-3 py-2">
           <div class="w-20 text-xs font-mono text-slate-500 dark:text-slate-400">
             {{ formatTime(log.timestamp) }}
           </div>
-          <div class="flex-1 text-sm text-slate-700 dark:text-slate-200">
+          <div class="flex-1 text-xs text-slate-700 dark:text-slate-200">
             {{ log.message }}
           </div>
         </div>
