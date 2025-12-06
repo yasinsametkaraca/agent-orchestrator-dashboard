@@ -154,7 +154,7 @@ export const useTaskStore = defineStore('tasks', () => {
     trackingController = controller;
     trackingController.start();
     state.value.polling = !controller.isUsingSse.value;
-    debugState('startTaskTracking:init')
+    debugState('startTaskTracking:init');
   };
 
   const stopTaskTracking = (): void => {

@@ -11,6 +11,12 @@ import {
   Legend
 } from 'chart.js';
 import type { SystemMetrics } from '@/types/domain';
+import {
+  getAgentUsageBreakdown,
+  getAgentUsagePercentages,
+  buildDailyTaskSeriesFromLastDays
+} from '@/utils/metricsHelpers';
+import { isLocalEnv } from '@/config/env';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, ArcElement, Tooltip, Legend);
 
@@ -20,25 +26,66 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const resolveChartColors = () => {
+  if (typeof window === 'undefined') {
+    return {
+      barBg: '#3476FA',
+      barBorder: '#2756B8',
+      donutContent: '#3476FA',
+      donutCode: '#06B6D4',
+      donutOther: '#94A3B8'
+    };
+  }
+
+  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+
+  if (prefersDark || document.documentElement.classList.contains('dark')) {
+    return {
+      // Dark mode: daha açık, opaklığı yüksek mavi
+      barBg: 'rgba(52, 118, 250, 0.7)',
+      barBorder: 'rgba(191, 219, 254, 1)',
+      donutContent: 'rgba(96, 165, 250, 1)',
+      donutCode: 'rgba(34, 211, 238, 1)',
+      donutOther: 'rgba(148, 163, 184, 1)'
+    };
+  }
+
+  // Light mode: figmadaki maviye yakın
+  return {
+    barBg: 'rgba(52, 118, 250, 0.85)',
+    barBorder: 'rgba(37, 99, 235, 1)',
+    donutContent: 'rgba(59, 130, 246, 1)',
+    donutCode: 'rgba(6, 182, 212, 1)',
+    donutOther: 'rgba(148, 163, 184, 1)'
+  };
+};
+
+const chartColors = resolveChartColors();
 
 const barData = computed(() => {
-  const values = new Array(7).fill(0);
-  if (props.metrics) {
-    const date = new Date(props.metrics.date);
-    const idx = date.getDay(); // 0-6, Sun-Sat
-    const mappedIdx = idx === 0 ? 6 : idx - 1; // Map Sun->6, Mon->0
-    values[mappedIdx] = props.metrics.total_tasks;
-  }
-  return {
-    labels: daysOfWeek,
+  const series = buildDailyTaskSeriesFromLastDays(props.metrics?.last_5_days);
+
+  const chartData = {
+    labels: series.labels,
     datasets: [
       {
-        label: 'Tasks',
-        data: values
+        label: 'Daily Task Volume',
+        data: series.values,
+        backgroundColor: chartColors.barBg,
+        borderColor: chartColors.barBorder,
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 32
       }
     ]
   };
+
+  if (isLocalEnv) {
+    // eslint-disable-next-line no-console
+    console.debug('[SystemChartsPanel] barData', chartData);
+  }
+
+  return chartData;
 });
 
 const barOptions = {
@@ -67,23 +114,46 @@ const barOptions = {
 
 const donutData = computed(() => {
   const metrics = props.metrics;
-  const content = metrics?.tasks_per_agent['ContentAgent'] || 0;
-  const code = metrics?.tasks_per_agent['CodeAgent'] || 0;
-  const total = content + code || 1;
-  const contentPct = Math.round((content / total) * 100);
-  const codePct = 100 - contentPct;
-  return {
-    labels: ['ContentAgent', 'CodeAgent'],
+  const breakdown = getAgentUsageBreakdown(metrics?.all_time?.tasks_per_agent);
+  const percentages = getAgentUsagePercentages(breakdown);
+
+  const labels: string[] = ['ContentAgent', 'CodeAgent'];
+  const values: number[] = [breakdown.content, breakdown.code];
+
+  let hasOther = false;
+  if (breakdown.other > 0) {
+    labels.push('Other');
+    values.push(breakdown.other);
+    hasOther = true;
+  }
+
+  const chartData = {
+    labels,
     datasets: [
       {
-        data: [content, code]
+        data: values,
+        backgroundColor: [
+          chartColors.donutContent,
+          chartColors.donutCode,
+          ...(hasOther ? [chartColors.donutOther] : [])
+        ],
+        borderWidth: 0
       }
     ],
     meta: {
-      contentPct,
-      codePct
+      contentPct: percentages.contentPct,
+      codePct: percentages.codePct,
+      otherPct: percentages.otherPct,
+      hasOther
     }
   };
+
+  if (isLocalEnv) {
+    // eslint-disable-next-line no-console
+    console.debug('[SystemChartsPanel] donutData', chartData);
+  }
+
+  return chartData;
 });
 
 const donutOptions = {
@@ -113,8 +183,8 @@ const donutOptions = {
         <div class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-50">
           Agent Distribution
         </div>
-        <div class="flex items-center gap-6">
-          <div class="h-40 w-40">
+        <div class="flex flex-col items-center gap-6 md:flex-row md:items-center">
+          <div class="h-40 w-40 mx-auto md:mx-0">
             <Doughnut :data="donutData" :options="donutOptions" />
           </div>
           <div class="space-y-2 text-xs text-slate-600 dark:text-slate-300">
@@ -130,6 +200,16 @@ const donutOptions = {
               <span>
                 CodeAgent (
                 {{ donutData.meta?.codePct ?? 0 }}%)
+              </span>
+            </div>
+            <div
+              v-if="donutData.meta?.hasOther"
+              class="flex items-center gap-2"
+            >
+              <span class="h-2 w-2 rounded-full bg-slate-400" />
+              <span>
+                Other Agents (
+                {{ donutData.meta?.otherPct ?? 0 }}%)
               </span>
             </div>
           </div>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { SystemMetrics } from '@/types/domain';
 import MetricCard from '@/components/molecules/MetricCard.vue';
+import { getAgentUsageBreakdown, getAgentUsagePercentages } from '@/utils/metricsHelpers';
+import { isLocalEnv } from '@/config/env';
 
 interface Props {
   metrics: SystemMetrics | null;
@@ -9,14 +11,38 @@ interface Props {
 defineProps<Props>();
 
 const computePercentages = (metrics: SystemMetrics | null) => {
-  if (!metrics) return { contentPct: 0, codePct: 0 };
-  const content = metrics.tasks_per_agent['ContentAgent'] || 0;
-  const code = metrics.tasks_per_agent['CodeAgent'] || 0;
-  const total = content + code;
-  if (!total) return { contentPct: 0, codePct: 0 };
+  const allTimeBreakdown = getAgentUsageBreakdown(metrics?.all_time?.tasks_per_agent);
+  const allTimePercentages = getAgentUsagePercentages(allTimeBreakdown);
+
+  if (isLocalEnv) {
+    // eslint-disable-next-line no-console
+    console.debug('[SystemMetricsGrid] all-time agent usage', {
+      hasMetrics: !!metrics,
+      allTimeBreakdown,
+      allTimePercentages
+    });
+  }
+
   return {
-    contentPct: Math.round((content / total) * 100),
-    codePct: Math.round((code / total) * 100)
+    contentPct: allTimePercentages.contentPct,
+    codePct: allTimePercentages.codePct
+  };
+};
+
+const computeTodayCounts = (metrics: SystemMetrics | null) => {
+  const todayBreakdown = getAgentUsageBreakdown(metrics?.tasks_per_agent);
+
+  if (isLocalEnv) {
+    // eslint-disable-next-line no-console
+    console.debug('[SystemMetricsGrid] today agent usage', {
+      hasMetrics: !!metrics,
+      todayBreakdown
+    });
+  }
+
+  return {
+    contentToday: todayBreakdown.content,
+    codeToday: todayBreakdown.code
   };
 };
 </script>
@@ -39,7 +65,7 @@ const computePercentages = (metrics: SystemMetrics | null) => {
       v-if="metrics"
       title="ContentAgent Usage"
       :value="`${computePercentages(metrics).contentPct}%`"
-      :helper="`${metrics.tasks_per_agent['ContentAgent'] || 0} tasks today`"
+      :helper="`${computeTodayCounts(metrics).contentToday} tasks today`"
       icon="chart"
     />
     <MetricCard
@@ -53,7 +79,7 @@ const computePercentages = (metrics: SystemMetrics | null) => {
       v-if="metrics"
       title="CodeAgent Usage"
       :value="`${computePercentages(metrics).codePct}%`"
-      :helper="`${metrics.tasks_per_agent['CodeAgent'] || 0} tasks today`"
+      :helper="`${computeTodayCounts(metrics).codeToday} tasks today`"
       icon="history"
     />
     <MetricCard

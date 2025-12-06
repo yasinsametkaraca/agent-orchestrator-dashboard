@@ -37,13 +37,16 @@ const onExecute = () => {
         placeholder="Enter your task here... e.g., 'Write a blog post about AI' or 'Create a React component for a login form'"
         @update:model-value="updateValue"
       />
-      <div class="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <div
+        class="mt-3 flex flex-col items-stretch justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center"
+      >
         <p>Tasks are queued and processed automatically.</p>
         <BaseButton
           variant="primary"
           icon-left="send"
           :loading="loading"
           :disabled="!modelValue.trim()"
+          class="self-end sm:self-auto"
           @click="onExecute"
         >
           Execute Task

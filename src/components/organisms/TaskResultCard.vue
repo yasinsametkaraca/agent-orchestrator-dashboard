@@ -76,9 +76,7 @@ defineProps<Props>();
           </div>
           <ul class="list-inside list-disc text-xs text-slate-600 dark:text-slate-300">
             <li v-for="c in task.result.citations" :key="`${c.source}-${c.url}`">
-              <span class="font-medium">{{ c.source }}</span>
               <template v-if="c.url">
-                -
                 <a
                   :href="c.url"
                   target="_blank"

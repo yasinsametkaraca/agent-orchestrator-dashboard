@@ -30,7 +30,7 @@ Key features:
   - Filter by agent type and status; search by summary.
   - View task details in a modal (`GET /v1/tasks/{task_id}`) with status timeline, output, and logs.
 - **System Monitor** page:
-  - Show queue depth, processed counts, agent distribution, and latency from `GET /v1/system/metrics`.
+  - Show queue depth, processed counts (current day, last 5 days, all-time), agent distribution, and latency from `GET /v1/system/metrics`.
   - Bar chart (daily task volume) and donut chart (agent distribution) using Chart.js.
   - Health section derived from `metrics.api_health` and `/health`.
 

@@ -86,14 +86,33 @@ export interface ExecuteTaskResponse {
 }
 
 export interface SystemMetrics {
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD (current day)
   total_tasks: number;
   tasks_per_agent: Record<string, number>;
   pending_tasks: number;
   avg_latency_ms: number;
   p95_latency_ms: number;
   api_health: Record<string, string>;
+  last_5_days: SystemMetricsDaySnapshot[];
+  all_time: SystemMetricsAllTimeSnapshot;
   api_version: string;
+}
+
+export interface SystemMetricsDaySnapshot {
+  date: string; // YYYY-MM-DD
+  total_tasks: number;
+  tasks_per_agent: Record<string, number>;
+  avg_latency_ms: number;
+  p95_latency_ms: number;
+}
+
+export interface SystemMetricsAllTimeSnapshot {
+  total_tasks: number;
+  tasks_per_agent: Record<string, number>;
+  avg_latency_ms: number;
+  p95_latency_ms: number;
+  first_task_at: string | null;
+  last_task_at: string | null;
 }
 
 export interface TaskStatusEvent {

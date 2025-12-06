@@ -5,9 +5,11 @@ import { RouterView } from 'vue-router';
 </script>
 
 <template>
-  <div class="flex h-screen bg-pa-bg dark:bg-slate-900 overflow-hidden">
+  <div class="flex h-screen flex-col bg-pa-bg dark:bg-slate-900 md:flex-row">
     <SidebarNav />
-    <main class="flex-1 overflow-y-auto px-8 py-8 md:px-10 md:py-10">
+    <main
+      class="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-10"
+    >
       <ToastContainer />
       <RouterView />
     </main>

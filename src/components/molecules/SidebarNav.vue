@@ -33,7 +33,7 @@ const themeLabel = computed(() => (theme.value === 'light' ? 'Light mode' : 'Dar
 
 <template>
   <aside
-    class="flex h-full w-64 flex-col border-r border-slate-200 bg-white px-6 py-6 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+    class="flex h-full w-full flex-shrink-0 flex-col border-b border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 md:h-screen md:w-64 md:border-b-0 md:border-r md:px-6 md:py-6"
   >
     <div>
       <div class="mb-8">
